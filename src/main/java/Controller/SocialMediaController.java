@@ -1,7 +1,11 @@
 package Controller;
 
+import Model.Account;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+
+import DAO.AccountDAO;
+import Service.AccountService;
 
 /**
  * TODO: You will need to write your own endpoints and handlers for your controller. The endpoints you will need can be
@@ -18,6 +22,28 @@ public class SocialMediaController {
         Javalin app = Javalin.create();
         app.get("example-endpoint", this::exampleHandler);
 
+        AccountService accountService = new AccountService(new AccountDAO());
+
+        app.post("/register", ctx -> {
+            Account acc = ctx.bodyAsClass(Account.class);
+            Account registered = accountService.register(acc);
+            if (registered != null) {
+                ctx.json(registered);
+            } else {
+                ctx.status(400);
+        }
+    });
+        app.post("/login", ctx -> {
+            Account credentials = ctx.bodyAsClass(Account.class);
+            Account result = accountService.login(credentials);
+            if (result != null) {
+                ctx.json(result);
+            } else {
+                ctx.status(401);
+            }
+        });
+
+        // After seting up the routes we return the Javalin app object.
         return app;
     }
 
