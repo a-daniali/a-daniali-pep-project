@@ -1,59 +1,125 @@
 package Controller;
 
-import Model.Account;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
-import DAO.AccountDAO;
 import Service.AccountService;
+import Service.MessageService;
+import DAO.AccountDAO;
+import DAO.MessageDAO;
+import Model.Account;
+import Model.Message;
 
-/**
- * TODO: You will need to write your own endpoints and handlers for your controller. The endpoints you will need can be
- * found in readme.md as well as the test cases. You should
- * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
- */
+import java.util.List;
+
 public class SocialMediaController {
-    /**
-     * In order for the test cases to work, you will need to write the endpoints in the startAPI() method, as the test
-     * suite must receive a Javalin object from this method.
-     * @return a Javalin app object which defines the behavior of the Javalin controller.
-     */
+
+    AccountService accountService = new AccountService(new AccountDAO());
+    MessageService messageService = new MessageService(new MessageDAO());
+
     public Javalin startAPI() {
         Javalin app = Javalin.create();
-        app.get("example-endpoint", this::exampleHandler);
+        // Javalin object has post and get methods that take a path string and
+        // a handler that accepts the context using this::handler function syntax
 
-        AccountService accountService = new AccountService(new AccountDAO());
+        // Example endpoint defined by project
+        app.get("/example-endpoint", this::exampleHandler);
 
-        app.post("/register", ctx -> {
-            Account acc = ctx.bodyAsClass(Account.class);
-            Account registered = accountService.register(acc);
-            if (registered != null) {
-                ctx.json(registered);
-            } else {
-                ctx.status(400);
-        }
-    });
-        app.post("/login", ctx -> {
-            Account credentials = ctx.bodyAsClass(Account.class);
-            Account result = accountService.login(credentials);
-            if (result != null) {
-                ctx.json(result);
-            } else {
-                ctx.status(401);
-            }
-        });
+        // User endpoints
+        app.post("/register", this::handleRegister); 
+        app.post("/login", this::handleLogin);
 
-        // After seting up the routes we return the Javalin app object.
+        // Message endpoints
+        app.post("/messages", this::handleCreateMessage);
+        app.get("/messages", this::handleGetAllMessages);
+        app.get("/messages/{message_id}", this::handleGetMessageById);
+        app.delete("/messages/{message_id}", this::handleDeleteMessage);
+        app.patch("/messages/{message_id}", this::handleUpdateMessage);
+        app.get("/accounts/{account_id}/messages", this::handleGetMessagesByUser);
+
         return app;
     }
 
-    /**
-     * This is an example handler for an example endpoint.
-     * @param context The Javalin Context object manages information about both the HTTP request and response.
-     */
     private void exampleHandler(Context context) {
+        // Example method defined by the project
         context.json("sample text");
     }
 
+    private void handleRegister(Context context) {
+        Account account = context.bodyAsClass(Account.class); // Turns Context into a Account class obj
+        Account registered = accountService.register(account); // could return null
 
+        if (registered != null) {
+            context.json(registered); // Return Json obj to user
+        } else { // Account registration not valid
+            context.status(400); // HTTP Bad request Code
+        }
+    }
+
+    private void handleLogin(Context context) {
+        Account credentials = context.bodyAsClass(Account.class);
+        Account result = accountService.login(credentials);
+
+        if (result != null) {
+            context.json(result);
+        } else {
+            context.status(401); // HTTP Unauthorized Code
+        }
+    }
+
+    private void handleCreateMessage(Context context) {
+        Message message = context.bodyAsClass(Message.class);
+        Message created = messageService.createMessage(message);
+
+        if (created != null) {
+            context.json(created);
+        } else {
+            context.status(400); // HTTP Bad request Code
+        }
+    }
+
+    private void handleGetAllMessages(Context context) {
+        List<Message> messages = messageService.getAllMessages();
+        context.json(messages);
+    }
+
+    private void handleGetMessageById(Context context) {
+        int messageId = Integer.parseInt(context.pathParam("message_id"));
+        Message message = messageService.getMessageById(messageId);
+
+        if (message != null) {
+            context.json(message);
+        } else {
+            context.json(""); // Empty if not found
+        }
+    }
+
+    private void handleDeleteMessage(Context context) {
+        int messageId = Integer.parseInt(context.pathParam("message_id"));
+        Message deleted = messageService.deleteMessage(messageId);
+
+        if (deleted != null) {
+            context.json(deleted);
+        } else {
+            context.json(""); // Still return 200, empty if not found
+        }
+    }
+
+    private void handleUpdateMessage(Context context) {
+        int messageId = Integer.parseInt(context.pathParam("message_id"));
+        Message updateRequest = context.bodyAsClass(Message.class);
+        Message updated = messageService.updateMessage(messageId, updateRequest.getMessage_text());
+
+        if (updated != null) {
+            context.json(updated);
+        } else {
+            context.status(400);
+        }
+    }
+
+    private void handleGetMessagesByUser(Context context) {
+        int accountId = Integer.parseInt(context.pathParam("account_id"));
+        List<Message> messages = messageService.getMessagesByUser(accountId);
+        context.json(messages);
+    }
 }

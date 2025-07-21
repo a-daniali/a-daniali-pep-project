@@ -11,7 +11,7 @@ public class AccountService {
         this.accountDAO = dao; // Add DAO object to the Service class
     }
 
-    // Method to handle user registeration
+    // 1: Our API should be able to process new User registrations.
     public Account register(Account account) {
         // Validate inputs
         int returnFlag = 0;
@@ -39,7 +39,7 @@ public class AccountService {
     }
 
 
-    // Method to handle login
+    // 2: Our API should be able to process User logins.
     public Account login(Account credentials) {
         int returnFlag = 0;
         Account existing = accountDAO.getAccountByUsername(credentials.getUsername());
@@ -51,7 +51,7 @@ public class AccountService {
         // It is important to avoid timing attacks when evaluating Users
         // We don't want to give potential attackers any idea on how our backend is working.
         // So It's a good idea to avoid early returns. 
-        
+
         return existing;
     }
 
